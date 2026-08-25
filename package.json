@@ -1,0 +1,12 @@
+{
+  "name": "directors-memory",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Director's Memory — AI Continuity Agent for Filmmakers (MVP v2: live Gemini Vision scene analysis).",
+  "type": "module",
+  "dependencies": {
+    "@google/genai": "^2.17.1",
+    "@clickhouse/client": "^1.23.1",
+    "@modelcontextprotocol/sdk": "^1.30.0"
+  }
+}

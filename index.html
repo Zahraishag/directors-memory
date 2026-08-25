@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Director's Memory — AI Continuity Agent for Filmmakers</title>
+<meta name="description" content="Director's Memory protects visual continuity across AI-generated film scenes." />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Mobile top bar toggle -->
+  <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle navigation">
+    <span></span><span></span><span></span>
+  </button>
+
+  <div class="app-shell">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-mark" aria-hidden="true"></div>
+        <div class="brand-text">
+          <span class="brand-name">Director's Memory</span>
+          <span class="brand-sub">Continuity Intelligence</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav" aria-label="Primary">
+        <button class="nav-item is-active" data-nav="overview" data-screen="home">
+          <span class="nav-icon" data-icon="overview"></span> Overview
+        </button>
+        <button class="nav-item" data-nav="scenes">
+          <span class="nav-icon" data-icon="scenes"></span> Scenes
+        </button>
+        <button class="nav-item" data-nav="decisions">
+          <span class="nav-icon" data-icon="decisions"></span> Director Decisions
+        </button>
+        <button class="nav-item" data-nav="conflicts">
+          <span class="nav-icon" data-icon="conflicts"></span> Conflicts
+        </button>
+        <button class="nav-item" data-nav="memory">
+          <span class="nav-icon" data-icon="memory"></span> Memory
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-footer-label">Demo build</div>
+        <div class="sidebar-footer-value">v0.1 — Hackathon MVP</div>
+      </div>
+    </aside>
+
+    <div class="sidebar-scrim" id="sidebarScrim"></div>
+
+    <!-- MAIN COLUMN -->
+    <div class="main-column">
+
+      <!-- TOP BAR -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="topbar-field">
+            <span class="topbar-label">Project</span>
+            <span class="topbar-value">Project Aurora</span>
+          </div>
+          <div class="topbar-divider"></div>
+          <div class="topbar-field">
+            <span class="topbar-label">Status</span>
+            <span class="topbar-value status-chip">Production</span>
+          </div>
+          <div class="topbar-divider"></div>
+          <div class="topbar-field topbar-scene-field">
+            <span class="topbar-label">Scene</span>
+            <div class="scene-switch" id="topbarSceneSwitch" role="tablist" aria-label="Select scene to inspect">
+              <button type="button" class="scene-switch-btn is-active" data-scene="7" role="tab" aria-selected="true">7</button>
+              <button type="button" class="scene-switch-btn" data-scene="8" role="tab" aria-selected="false">8</button>
+              <button type="button" class="scene-switch-btn" data-scene="10" role="tab" aria-selected="false">10</button>
+            </div>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <div class="badge-active">
+            <span class="badge-dot"></span>
+            Director Memory Active
+          </div>
+        </div>
+      </header>
+
+      <!-- SCREEN: HOME -->
+      <main class="screen is-active" id="screen-home">
+        <section class="hero">
+          <div class="hero-glow" aria-hidden="true"></div>
+          <p class="eyebrow">AI Continuity Agent for Filmmakers</p>
+          <h1 class="hero-title">Director's Memory</h1>
+          <p class="hero-tagline">Protect the director's vision across every scene.</p>
+          <button class="btn btn-primary btn-lg" id="btnAnalyzeScene">
+            Analyze Scene
+            <span class="btn-arrow">→</span>
+          </button>
+        </section>
+
+        <section class="stats-row">
+          <div class="stat-card">
+            <span class="stat-value">7</span>
+            <span class="stat-label">Scenes tracked</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value">14</span>
+            <span class="stat-label">Director decisions</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value">4</span>
+            <span class="stat-label">Active continuity rules</span>
+          </div>
+        </section>
+      </main>
+
+      <!-- SCREEN: SCENE REVIEW -->
+      <main class="screen" id="screen-scene">
+        <div class="screen-header">
+          <button class="btn-back" data-back="home">← Overview</button>
+          <h2 class="screen-title" id="sceneTitle">Scene 7 — Rooftop Escape</h2>
+          <span class="ai-badge ai-badge-ready">
+            <span class="ai-badge-dot"></span> AI Vision Ready
+          </span>
+        </div>
+
+        <div class="scene-layout">
+          <div class="scene-frame">
+            <img class="scene-frame-img" src="assets/scene-07-frame.jpg" alt="Scene 7 — Maya stands on a rain-soaked rooftop at night, long black hair, black coat, carrying a duffel bag, city skyline behind her." />
+            <div class="scene-frame-gradient" aria-hidden="true"></div>
+            <div class="scene-frame-scan" aria-hidden="true"></div>
+            <div class="scene-frame-tag">FRAME 07 · NIGHT EXT</div>
+          </div>
+
+          <div class="scene-info">
+            <div class="panel">
+              <h3 class="panel-title">Current Scene Description</h3>
+              <p class="scene-description">
+                "Maya stands on a rain-soaked rooftop at night. She has long black hair, wears a black coat, and carries a dark duffel bag."
+              </p>
+            </div>
+
+            <div class="panel">
+              <h3 class="panel-title">Metadata</h3>
+              <dl class="meta-grid">
+                <div class="meta-item"><dt>Character</dt><dd>Maya</dd></div>
+                <div class="meta-item"><dt>Location</dt><dd>Rooftop</dd></div>
+                <div class="meta-item"><dt>Time</dt><dd>Night</dd></div>
+                <div class="meta-item"><dt>Scene</dt><dd id="metaSceneValue">7</dd></div>
+              </dl>
+            </div>
+
+            <button class="btn btn-primary btn-lg btn-full" id="btnRunCheck">
+              Run Continuity Check
+            </button>
+          </div>
+        </div>
+      </main>
+
+      <!-- SCREEN: PROCESSING (overlay-like screen) -->
+      <main class="screen" id="screen-processing">
+        <div class="processing-wrap">
+          <div class="scan-visual" aria-hidden="true">
+            <div class="scan-bar"></div>
+            <div class="scan-bar"></div>
+            <div class="scan-bar"></div>
+            <div class="scan-bar"></div>
+            <div class="scan-bar"></div>
+          </div>
+          <h2 class="processing-title">Analyzing scene with Gemini Vision...</h2>
+          <ul class="processing-steps" id="processingSteps">
+            <li data-step="0">Reading visual scene</li>
+            <li data-step="1">Identifying character attributes</li>
+            <li data-step="2">Checking wardrobe</li>
+            <li data-step="3">Detecting props</li>
+            <li data-step="4">Analyzing lighting</li>
+            <li data-step="5">Comparing with Director Memory</li>
+          </ul>
+        </div>
+      </main>
+
+      <!-- SCREEN: CONFLICT DETECTION -->
+      <main class="screen" id="screen-conflicts">
+        <div class="screen-header">
+          <button class="btn-back" data-back="scene" id="conflictsBackBtn">← Scene 7</button>
+          <h2 class="screen-title conflict-title">
+            <span class="conflict-count" id="conflictCount">3</span> Continuity Conflicts Detected
+          </h2>
+        </div>
+
+        <div class="panel gemini-panel">
+          <div class="gemini-panel-head">
+            <span class="panel-title">Gemini Vision Analysis</span>
+            <span class="source-badge" id="sourceBadge">LIVE · GEMINI</span>
+          </div>
+          <dl class="gemini-grid" id="geminiGrid"></dl>
+          <div class="gemini-footer">
+            <span class="gemini-confidence" id="geminiConfidence">AI confidence: —</span>
+            <span class="gemini-warning" id="geminiWarning" hidden>Low-confidence visual detection — review recommended.</span>
+          </div>
+        </div>
+
+        <div class="panel gemini-panel clickhouse-panel">
+          <div class="gemini-panel-head">
+            <span class="panel-title">Director Memory (ClickHouse)</span>
+            <span class="source-badge" id="clickhouseBadge">LIVE · CLICKHOUSE</span>
+          </div>
+          <p class="clickhouse-meta" id="clickhouseMeta">Retrieving active decisions…</p>
+        </div>
+
+        <div class="conflict-grid" id="conflictGrid">
+          <!-- conflict cards injected by JS -->
+        </div>
+
+        <div class="consistency-list" id="consistencyList">
+          <!-- consistency cards injected by JS, one per attribute the
+               Continuity Engine found consistent (never one already
+               shown as a conflict card above) -->
+        </div>
+      </main>
+
+      <!-- SCREEN: GENERATE FIX -->
+      <main class="screen" id="screen-fix">
+        <div class="screen-header">
+          <button class="btn-back" data-back="conflicts">← Conflicts</button>
+          <h2 class="screen-title">Continuity Fix Generated</h2>
+        </div>
+
+        <div class="fix-layout">
+          <div class="panel prompt-panel">
+            <div class="prompt-panel-head">
+              <span class="panel-title">Corrected Prompt</span>
+              <button class="btn btn-ghost btn-sm" id="btnCopyPrompt">Copy Prompt</button>
+            </div>
+            <p class="prompt-text" id="promptText"></p>
+          </div>
+
+          <div class="panel fix-summary">
+            <div class="fix-col">
+              <span class="fix-col-title fixing">Fixing</span>
+              <ul class="fix-list" id="fixingList"></ul>
+            </div>
+            <div class="fix-col">
+              <span class="fix-col-title preserving">Preserving</span>
+              <ul class="fix-list" id="preservingList"></ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="fix-actions">
+          <button class="btn btn-primary btn-lg" id="btnApproveFix">Approve Fix</button>
+          <button class="btn btn-secondary btn-lg" id="btnCopyPrompt2">Copy Prompt</button>
+        </div>
+      </main>
+
+      <!-- SCREEN: SUCCESS -->
+      <main class="screen" id="screen-success">
+        <div class="success-wrap">
+          <div class="success-icon">✓</div>
+          <h2 class="success-title">Continuity Restored</h2>
+          <p class="success-sub">3 conflicts resolved.</p>
+
+          <div class="impact-panel">
+            <h3 class="panel-title">Production impact</h3>
+            <ul class="impact-list">
+              <li><strong>3</strong> continuity errors prevented</li>
+              <li><strong>1</strong> scene protected</li>
+              <li><strong>4</strong> director rules validated</li>
+            </ul>
+          </div>
+
+          <p class="success-quote">
+            AI generates scenes.<br />Director's Memory protects the story.
+          </p>
+
+          <button class="btn btn-secondary" id="btnBackHome">Back to Overview</button>
+        </div>
+      </main>
+
+      <!-- SCREEN: DIRECTOR MEMORY (scene-aware, live ClickHouse) -->
+      <main class="screen" id="screen-memory">
+        <div class="screen-header">
+          <button class="btn-back" data-back="home">← Overview</button>
+          <h2 class="screen-title" id="memoryTitle">Scene 7 — Director Memory</h2>
+          <span class="source-badge" id="memoryBadge">LIVE · CLICKHOUSE</span>
+        </div>
+
+        <div class="panel gemini-panel" id="memoryStatusPanel">
+          <p class="clickhouse-meta" id="memoryStatusText">Retrieving active decisions from ClickHouse…</p>
+          <p class="memory-explain" id="memoryExplainText"></p>
+        </div>
+
+        <div class="memory-decision-grid" id="memoryDecisionGrid">
+          <!-- decision cards injected by JS -->
+        </div>
+
+        <div class="panel memory-empty-panel" id="memoryEmptyPanel" hidden>
+          <h3 class="panel-title">No active director decisions</h3>
+          <p class="clickhouse-meta" id="memoryEmptyText">0 active decisions retrieved for Maya · Scene 10</p>
+          <p class="memory-explain" id="memoryEmptyExplain">All previous creative decisions expired before Scene 10.</p>
+          <p class="memory-footnote">Scene-aware memory correctly prevents expired decisions from affecting later scenes.</p>
+        </div>
+
+        <div class="panel memory-error-panel" id="memoryErrorPanel" hidden>
+          <h3 class="panel-title">Director Memory unavailable</h3>
+          <p class="clickhouse-meta" id="memoryErrorText">Something went wrong retrieving Director Memory for this scene.</p>
+        </div>
+      </main>
+
+    </div>
+  </div>
+
+  <!-- MODAL: DIRECTOR DECISION -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal-close" id="modalClose" aria-label="Close">✕</button>
+      <p class="modal-eyebrow">Active Director Decision</p>
+      <h3 class="modal-title" id="modalTitle">DEC-011</h3>
+
+      <dl class="modal-grid" id="modalGrid"></dl>
+
+      <div class="modal-why">
+        <span class="modal-why-label">Why this matters</span>
+        <p class="modal-why-text" id="modalWhy"></p>
+      </div>
+
+      <button class="btn btn-primary btn-full" id="btnGenerateFix">Generate Continuity Fix</button>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
