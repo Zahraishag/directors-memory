@@ -1,396 +1,720 @@
-# Director's Memory
+# 🎬 Director's Memory
 
-**AI Continuity Agent for Filmmakers**
+### Persistent Creative Decision Memory for Agentic Filmmaking
 
-> AI generates scenes. Director's Memory protects the story.
+> **AI shouldn’t replace the director’s decisions. It should remember them.**
 
-**MVP v2 — Real Gemini Vision Analysis.** Scene 7's visual attributes are
-now extracted live from the real frame (`assets/scene-07-frame.jpg`) by
-Gemini, server-side, instead of being hardcoded. See
-[MVP v1 vs. MVP v2](#mvp-v1-vs-mvp-v2) below.
+Director's Memory is an AI-powered continuity system for film production that gives filmmaking agents persistent memory of approved creative decisions across scenes.
+
+Instead of treating every generated scene as an isolated prompt, Director's Memory remembers what the director already approved, retrieves only the decisions that still apply to the current scene, and checks new scene content for continuity conflicts.
 
 ---
 
-## What is Director's Memory?
+## 🚀 Live Demo
 
-Filmmakers using AI to generate scenes hit a recurring problem: the AI has no
-memory of what it decided last shot. A character's hairstyle, wardrobe,
-props, lighting, age, or location can silently drift from one generated
-scene to the next — because each generation is an isolated prompt, not a
-continuation of a production.
+https://directors-memory-4.vercel.app
 
-**Director's Memory** is an agent that sits between the director and the
-generation tool. It remembers every approved production decision, checks new
-scenes against that memory, flags anything that breaks continuity, and
-proposes a corrected prompt that restores the director's original vision —
-without the director having to manually track every detail across every
-scene.
+---
 
-## Problem
+## 🔗 Repository
 
-- AI scene generation has no persistent memory of prior creative decisions.
-- Continuity errors (hair, wardrobe, props, lighting, age, location) slip
-  through unnoticed until review — costing re-generation time and breaking
-  audience immersion.
-- Directors currently track continuity manually, in notes or spreadsheets,
-  which doesn't scale across a full production.
+https://github.com/Zahraishag/directors-memory
 
-## Solution
+---
 
-Director's Memory acts as a **continuity layer** on top of any AI generation
-pipeline:
+# 🎯 The Problem
 
-1. **Remember** — store every approved director decision (character,
-   attribute, value, and the scene range it applies to).
-2. **Compare** — when a new scene is generated, compare its detected
-   attributes against every decision currently in force.
-3. **Detect** — surface conflicts clearly, with the current value, the
-   expected value, and the decision that established it.
-4. **Fix** — generate a corrected prompt that restores continuity while
-   explicitly preserving everything that was already correct (lighting,
-   identity, location).
-5. **Approve** — the director approves the fix, and the resolution becomes
-   part of the project's continuity record.
+Generative AI can create scenes quickly, but it often loses continuity between generations.
 
-## How the demo works
+A director may establish that:
 
-This MVP ships with a scripted demo scenario so a judge can see the full
-loop in under a minute, with no setup:
+- Maya has **short black hair**
+- Maya wears a **red coat**
+- Maya carries a **silver shoulder bag**
+- Night scenes use **cold blue lighting**
 
-1. **Overview** — project stats: scenes tracked, director decisions, active
-   continuity rules.
-2. **Scene Review** — Scene 7, "Rooftop Escape," with its current AI-generated
-   description and metadata.
-3. **Run Continuity Check** — the frame is sent to Gemini Vision for real
-   analysis while a short animation walks through identity, wardrobe,
-   props, lighting, and active decisions. A **LIVE · GEMINI** badge and a
-   **Gemini Vision Analysis** panel show exactly what Gemini detected in
-   the frame, with a confidence score, before any comparison happens.
-4. **Conflict Detection** — those live-detected attributes are compared
-   against Director Memory, surfacing conflicts (hair, wardrobe, prop),
-   plus a confirmation that lighting is consistent.
-5. **Director Memory** — clicking "View Decision" opens the exact approved
-   decision (id, value, effective scene range, source) behind a conflict.
-6. **Generate Fix** — a corrected prompt is generated and can be copied to
-   the clipboard, along with a clear "fixing vs. preserving" summary.
-7. **Approve Fix** — confirms the resolution and shows production impact
-   (errors prevented, scenes protected, rules validated).
+A later AI-generated scene may unexpectedly introduce:
 
-Director decisions (DEC-011 → DEC-014) are still defined locally in
-`app.js` — there is no persistent backend for those yet. What changed in
-v2 is where the *scene's* attributes come from: they're now the live
-output of a real Gemini Vision call instead of a hardcoded object.
+- Different hair
+- Different wardrobe
+- Missing props
+- Different lighting
 
-## MVP v1 vs. MVP v2
+Each individual generation may look convincing, but the film gradually loses visual continuity.
 
-| | MVP v1 | MVP v2 |
-|---|---|---|
-| Scene attributes | Hardcoded in `app.js` (`sceneData.currentScene.attributes`) | Extracted live by Gemini Vision from `assets/scene-07-frame.jpg` |
-| Where Gemini runs | Not used | Server-side only, in `api/analyze-scene.js` (Vercel Function) |
-| API key exposure | N/A | Never sent to the browser — read from `process.env.GEMINI_API_KEY` server-side |
-| Failure behavior | N/A | Falls back to the same v1 scripted attributes, with a toast + `DEMO FALLBACK` badge |
-| Continuity engine | `findActiveDecisions` / `detectConflicts` / `generateFixPrompt` | **Unchanged.** Same functions, now fed live data instead of static data |
+Traditional chat history is not enough for a structured, multi-scene production workflow.
 
-The data flow end to end:
+---
 
-```
-Gemini Vision  →  Continuity Engine  →  Director Memory  →  Conflict Detection  →  Fix Prompt
-(observes the      (isDecisionActiveForScene,   (source of truth:      (compares live vs.    (generateFixPrompt uses
- current frame)      resolveDecision,             DEC-011 → DEC-014)     expected values)       the corrected, approved
-                      findActiveDecisions,                                                       values from Director
-                      detectConflicts — untouched)                                                Memory, not from Gemini)
-```
+# 💡 The Solution
 
-This split is the core philosophy of the project and is intentionally
-enforced by the architecture, not just convention:
+Director's Memory separates the filmmaking workflow into three responsibilities:
 
-- **Gemini observes.** It only ever answers "what is visibly in this
-  frame?" — hair, wardrobe, prop, lighting, location, time of day — as
-  short factual values, never a creative description, and it must return
-  `"unknown"` rather than invent a value it isn't confident about.
-- **Director Memory decides.** The approved decisions (`directorDecisions`
-  in `app.js`) are the only source of truth for what a scene *should*
-  contain. Gemini's output is never treated as ground truth.
-- **The Continuity Engine judges.** `detectConflicts()` is the only place
-  "current" and "expected" are compared — and it doesn't care whether
-  "current" came from Gemini or from the fallback object.
+### 1. Gemini observes the current scene
 
-## Architecture
+Gemini analyzes the current scene and extracts structured visual attributes such as:
 
-```
-Browser                          Server (Vercel Functions)
-────────                         ─────────────────────────
-1. Load assets/scene-07-frame.jpg
-2. Resize to ≤1280px, JPEG q=0.82
-3. POST { imageBase64, mimeType,
-          sceneNumber, character }
-                │
-                ▼
-        /api/analyze-scene ───────►  api/analyze-scene.js
-                                      • validates input (400 on bad request)
-                                      • reads GEMINI_API_KEY from env
-                                      • calls @google/genai, model
-                                        gemini-3.6-flash, with a strict
-                                        responseSchema (structured JSON)
-                                      • returns { success, source, analysis }
-                                        or a generic 500 (no stack traces)
-                │
-                ◄───────────────────
-        (in parallel with the above)
-3b. GET /api/get-decisions
-      ?project_id=project-aurora
-      &character_name=Maya&scene=7 ─►  api/get-decisions.js
-                                      • validates query params (400 on bad request)
-                                      • reads CLICKHOUSE_HOST/USERNAME/
-                                        PASSWORD/DATABASE from env
-                                      • queries director_decisions via
-                                        @clickhouse/client with parameterized
-                                        values (project_id, character_name,
-                                        scene)
-                                      • returns { success, source: "clickhouse",
-                                        decisions } or success:false with a
-                                        generic error (never fakes "clickhouse")
-                │
-                ◄───────────────────
-4. appState.scene.attributes = { hair, wardrobe, prop, lighting } from Gemini
-   analysis (or fallback); appState.directorDecisionsLive = decisions from
-   ClickHouse (or fallback)
-5. runAnalysis() → findActiveDecisions() → detectConflicts()   [UNCHANGED]
-6. renderGeminiPanel() + renderClickhousePanel() + renderConflicts()
-```
+- Hair
+- Wardrobe
+- Props
+- Lighting
+- Location
+- Time of day
 
-`app.js` layering:
+### 2. ClickHouse remembers approved creative decisions
 
-```
-app.js
-├── 1. DATA LAYER
-│     sceneData                   — scene metadata + local frame reference
-│     fallbackDirectorDecisions   — approved production decisions, used only
-│                                   if the live ClickHouse call fails
-│     fallbackAnalysis            — v1-equivalent attributes, used only if
-│                                   the live Gemini call fails
-│
-├── 1A. CLICKHOUSE MEMORY LAYER  (new in v3)
-│     fetchDirectorDecisions()   — calls /api/get-decisions, never throws;
-│                                  always resolves to a usable result and
-│                                  never fakes source: "clickhouse"
-│
-├── 1B. GEMINI VISION LAYER  (v2)
-│     loadSceneImageAsBase64()   — reads + resizes the frame client-side
-│     analyzeSceneWithGemini()   — calls /api/analyze-scene, never throws;
-│                                  always resolves to a usable result
-│
-├── 2. CONTINUITY ENGINE (pure functions, no DOM access — UNTOUCHED)
-│     isDecisionActiveForScene(decision, sceneNumber)
-│     resolveDecision(character, attribute, decisions, sceneNumber)
-│     findActiveDecisions(sceneNumber, decisions)
-│     detectConflicts(scene, activeDecisions)
-│     generateFixPrompt(scene, conflicts, consistent)
-│
-├── 3. APPLICATION STATE
-│     appState              — scene, live decisions, conflicts, fix,
-│                              vision result, decisions source
-│     applyVisionResult() / applyDecisionsResult() / runAnalysis() /
-│     buildFix() / approveFix()
-│
-└── 4. UI LAYER
-      screen navigation, rendering, modal, toast, clipboard,
-      Gemini Vision Analysis panel (LIVE·GEMINI/DEMO FALLBACK badge),
-      Director Memory panel (LIVE·CLICKHOUSE/MEMORY FALLBACK badge)
+Director decisions are stored as persistent structured production memory in ClickHouse Cloud.
+
+Each decision can include:
+
+- Character
+- Attribute
+- Approved value
+- Effective starting scene
+- Effective ending scene
+- Status
+- Source
+- Reasoning
+
+### 3. The Continuity Engine judges
+
+The application compares what Gemini observes in the current scene with the director decisions that are still active.
+
+It then detects continuity conflicts and helps generate a correction.
+
+> **Gemini observes. ClickHouse remembers. The Continuity Engine judges.**
+
+---
+
+# 🧠 Temporal Creative Memory
+
+Director's Memory does not simply ask:
+
+> What did the director decide?
+
+It also asks:
+
+> Is that decision still active in this scene?
+
+Example:
+
+| Decision | Value | Effective From | Effective Until |
+|---|---|---:|---:|
+| Hair | Short black hair | Scene 3 | Scene 9 |
+| Wardrobe | Red coat | Scene 3 | Scene 9 |
+| Prop | Silver shoulder bag | Scene 4 | Scene 9 |
+| Lighting | Cold blue nighttime lighting | Scene 5 | Scene 9 |
+
+This means:
+
+### Scene 8
+
+All four decisions are still active.
+
+### Scene 10
+
+Those decisions have expired.
+
+The system therefore avoids carrying old creative constraints forward forever.
+
+---
+
+# ⚡ Runtime Architecture
+
+```text
+                 ┌─────────────────────────┐
+                 │     Director / User     │
+                 └────────────┬────────────┘
+                              │
+                              ▼
+                 ┌─────────────────────────┐
+                 │   Director's Memory UI  │
+                 │        Vercel           │
+                 └────────────┬────────────┘
+                              │
+               ┌──────────────┴──────────────┐
+               │                             │
+               ▼                             ▼
+      ┌─────────────────┐          ┌─────────────────────┐
+      │     Gemini      │          │ /api/get-decisions  │
+      │ Scene Analysis  │          │   Memory Retrieval  │
+      └────────┬────────┘          └──────────┬──────────┘
+               │                              │
+               │                              ▼
+               │                  ┌──────────────────────────┐
+               │                  │ Official ClickHouse MCP  │
+               │                  │       run_query          │
+               │                  └───────────┬──────────────┘
+               │                              │
+               │                              ▼
+               │                  ┌──────────────────────────┐
+               │                  │     ClickHouse Cloud     │
+               │                  │ Persistent Film Memory   │
+               │                  └───────────┬──────────────┘
+               │                              │
+               └──────────────┬───────────────┘
+                              ▼
+                 ┌─────────────────────────┐
+                 │    Continuity Engine    │
+                 │  Conflict Detection     │
+                 └────────────┬────────────┘
+                              │
+                              ▼
+                 ┌─────────────────────────┐
+                 │ Suggested Continuity Fix│
+                 └─────────────────────────┘
 ```
 
-**Decision activity rule (unchanged):**
-A decision is active for a scene when
-`sceneNumber >= effectiveFromScene`, and if `effectiveUntilScene` is set,
-`sceneNumber <= effectiveUntilScene`, and `status === "active"`. This rule
-lives entirely in the client-side continuity engine — `api/get-decisions.js`
-does an equivalent filter in SQL so ClickHouse only ever returns rows that
-are already active for the requested scene, but the engine re-derives
-activity itself rather than trusting the network response blindly.
+---
 
-**Supersedes (unchanged):**
-Each decision may carry a `supersedes: "DEC-XXX"` field. When a newer active
-decision supersedes an older one for the same `character + attribute` pair,
-`resolveDecision()` drops the older decision from consideration. The current
-demo dataset doesn't need this (no decision has been revised yet), but the
-engine supports it from day one, since real productions revise decisions
-mid-shoot.
+# 🔌 Official ClickHouse MCP Integration
 
-**ClickHouse schema (`default.director_decisions`):**
-`project_id`, `decision_id`, `character_name`, `attribute`, `approved_value`,
-`effective_from_scene`, `effective_until_scene` (nullable), `status`,
-`supersedes` (nullable), `source_scene` (nullable), `source_type`,
-`reasoning`, `created_at`. `api/get-decisions.js` maps each row into the same
-shape the continuity engine already expects (`id`, `character`, `attribute`,
-`label`, `value`, `effectiveFromScene`, `effectiveUntilScene`, `status`,
-`supersedes`, `source`), so nothing downstream of the API had to change.
+Director's Memory uses the **official ClickHouse MCP server** as the primary runtime path for retrieving director memory.
 
-## Reliability: fallback behavior
+The production path is:
 
-The live demo must never break on stage, so failure is handled deliberately,
-identically for both live integrations:
+```text
+Director's Memory
+        ↓
+Vercel API
+        ↓
+MCP Client
+        ↓
+Official ClickHouse MCP
+        ↓
+run_query
+        ↓
+ClickHouse Cloud
+```
 
-- If Gemini fails for **any** reason — network, quota, missing/invalid API
-  key, timeout, malformed response — `analyzeSceneWithGemini()` catches it
-  and returns the same `fallbackAnalysis` object MVP v1 used to hardcode.
-  The UI shows **DEMO FALLBACK** instead of **LIVE · GEMINI**, plus a toast.
-- If ClickHouse fails for **any** reason — network, missing/invalid
-  credentials, query error, timeout — `fetchDirectorDecisions()` catches it
-  and returns the same `fallbackDirectorDecisions` array MVP v1/v2 used to
-  hardcode. The UI shows **MEMORY FALLBACK** instead of **LIVE · CLICKHOUSE**,
-  plus a toast: *"Live ClickHouse memory unavailable — using local fallback
-  decisions."*
-- Neither client-side layer ever fabricates a "live" source label — the
-  badge only ever reflects what the corresponding API call actually
-  returned this run.
-- The rest of the flow — conflict detection, View Decision, Generate Fix,
-  Approve Fix — behaves identically regardless of source, because the
-  continuity engine only ever reads `appState.scene.attributes` and
-  `appState.directorDecisionsLive`.
-- Server-side, both endpoints have their own timeouts and never return a
-  stack trace to the client — only a generic message, with the real error
-  logged to the Vercel function's server console.
-- `GET /api/health-clickhouse` reports `{ ok, configured, status }` for
-  connectivity checks without exposing host, credentials, or driver error
-  text.
+MCP is not used only as a connectivity demonstration.
 
-## Future integrations
+The actual production-memory query used by the application is executed through the MCP `run_query` tool during runtime.
 
-The intended integrations not yet implemented, marked with `// TODO:`
-comments in `app.js`, are:
+The API explicitly exposes which transport served the request:
 
-- **MCP Server** — expose `findActiveDecisions`, `detectConflicts`, and
-  `approveFix` as tools an MCP-connected AI agent (or the generation tool
-  itself) can call directly.
-- **Google Cloud** — move the API layer currently living in Vercel Functions
-  to a dedicated Cloud Run / Cloud Functions service if/when it needs to
-  front more than Gemini + ClickHouse.
-- **Scene analysis history** — store each Gemini observation (not just the
-  latest one) so continuity can be audited across the whole production.
+```json
+{
+  "source": "clickhouse",
+  "memory_transport": "mcp"
+}
+```
 
-## How to run locally
+This makes the MCP runtime path observable and verifiable.
 
-The frontend is still plain HTML/CSS/JS, but `/api/analyze-scene` and
-`/api/get-decisions` now need the Vercel dev server (a plain static server
-won't run the serverless functions):
+---
+
+# ✅ Runtime Proof
+
+## Scene 8 — Active Memory
+
+Request:
+
+```text
+/api/get-decisions?project_id=project-aurora&character_name=Maya&scene=8
+```
+
+Production response:
+
+```json
+{
+  "success": true,
+  "source": "clickhouse",
+  "memory_transport": "mcp",
+  "project_id": "project-aurora",
+  "character_name": "Maya",
+  "scene": 8,
+  "decisions": [
+    {
+      "id": "DEC-011",
+      "attribute": "hair",
+      "value": "Short black hair"
+    },
+    {
+      "id": "DEC-014",
+      "attribute": "lighting",
+      "value": "Cold blue nighttime lighting"
+    },
+    {
+      "id": "DEC-013",
+      "attribute": "prop",
+      "value": "Silver shoulder bag"
+    },
+    {
+      "id": "DEC-012",
+      "attribute": "wardrobe",
+      "value": "Red coat"
+    }
+  ]
+}
+```
+
+### Result
+
+Scene 8 retrieves four active production decisions from ClickHouse through the official MCP runtime path.
+
+---
+
+## Scene 10 — Memory Expiration
+
+Request:
+
+```text
+/api/get-decisions?project_id=project-aurora&character_name=Maya&scene=10
+```
+
+Production response:
+
+```json
+{
+  "success": true,
+  "source": "clickhouse",
+  "memory_transport": "mcp",
+  "project_id": "project-aurora",
+  "character_name": "Maya",
+  "scene": 10,
+  "decisions": []
+}
+```
+
+### Result
+
+The MCP query succeeds, but no decisions are returned because the earlier creative decisions expired after Scene 9.
+
+This demonstrates that Director's Memory remembers not only **what was decided**, but also **when the decision should stop applying**.
+
+---
+
+# 🩺 MCP Health Verification
+
+The project includes:
+
+```text
+/api/health-mcp
+```
+
+A healthy production connection returns:
+
+```json
+{
+  "ok": true,
+  "configured": true,
+  "connected": true,
+  "tool_called": "list_databases",
+  "tool_succeeded": true,
+  "available_tools": [
+    "list_databases",
+    "list_tables",
+    "run_query"
+  ],
+  "status": "connected"
+}
+```
+
+This verifies that the Vercel application can discover and invoke tools on the ClickHouse MCP server.
+
+---
+
+# 🎥 Demo Flow
+
+The demo is designed to show the full continuity-memory loop.
+
+## Scene 7 — Detect a Continuity Conflict
+
+The application:
+
+1. Analyzes the current scene with Gemini.
+2. Retrieves active director decisions.
+3. Compares observed attributes with production memory.
+4. Surfaces continuity conflicts.
+5. Displays the underlying director decision.
+6. Generates a continuity correction.
+7. Allows the fix to be approved.
+
+The application visibly distinguishes live integrations using:
+
+```text
+LIVE · GEMINI
+```
+
+and:
+
+```text
+LIVE · CLICKHOUSE
+```
+
+---
+
+## Scene 8 — Persistent Memory
+
+Scene 8 demonstrates that previously approved production decisions remain available later in the film.
+
+Four active decisions are retrieved:
+
+- Short black hair
+- Red coat
+- Silver shoulder bag
+- Cold blue nighttime lighting
+
+The response confirms:
+
+```json
+"memory_transport": "mcp"
+```
+
+---
+
+## Scene 10 — Memory Lifecycle
+
+Scene 10 demonstrates that expired decisions are not incorrectly applied forever.
+
+The same runtime MCP query succeeds, but returns:
+
+```json
+"decisions": []
+```
+
+because those decisions are no longer active.
+
+---
+
+# 🧩 Core Components
+
+## Gemini
+
+Gemini provides current-scene understanding.
+
+It extracts structured visual information for the continuity engine rather than deciding what the director intended.
+
+---
+
+## ClickHouse Cloud
+
+ClickHouse is the persistent production-memory layer.
+
+It stores approved creative decisions in structured form and supports fast scene-aware retrieval.
+
+---
+
+## Official ClickHouse MCP
+
+The official ClickHouse MCP server exposes ClickHouse tools to the agentic workflow.
+
+Available tools include:
+
+```text
+list_databases
+list_tables
+run_query
+```
+
+Director's Memory uses:
+
+```text
+run_query
+```
+
+for live production-memory retrieval.
+
+---
+
+## Continuity Engine
+
+The Continuity Engine compares:
+
+```text
+CURRENT SCENE
+      vs.
+APPROVED DIRECTOR MEMORY
+```
+
+It determines whether a conflict exists.
+
+This separation is deliberate:
+
+> **Gemini observes. ClickHouse remembers. The Continuity Engine judges.**
+
+---
+
+# 🗃️ Production Memory Model
+
+Director decisions can include:
+
+```text
+project_id
+decision_id
+character_name
+attribute
+approved_value
+effective_from_scene
+effective_until_scene
+status
+supersedes
+source_scene
+source_type
+reasoning
+created_at
+```
+
+A retrieved decision is mapped into the application shape:
+
+```text
+id
+character
+attribute
+label
+value
+effectiveFromScene
+effectiveUntilScene
+status
+supersedes
+source
+```
+
+This gives Director's Memory explicit creative state with lifecycle boundaries.
+
+---
+
+# 🛡️ Resilient Runtime Design
+
+The primary memory route is:
+
+```text
+Official ClickHouse MCP
+        ↓
+ClickHouse Cloud
+```
+
+A direct ClickHouse backend path is retained as a resilience fallback.
+
+If the MCP service becomes temporarily unavailable, the production workflow can still retrieve memory through the direct ClickHouse client.
+
+The response identifies which path was used:
+
+```json
+"memory_transport": "mcp"
+```
+
+or:
+
+```json
+"memory_transport": "direct"
+```
+
+The tested production submission currently returns:
+
+```json
+"memory_transport": "mcp"
+```
+
+for the live MCP path.
+
+---
+
+# 🔐 Environment Variables
+
+The project requires server-side environment variables.
+
+```env
+GEMINI_API_KEY=
+
+CLICKHOUSE_HOST=
+CLICKHOUSE_USERNAME=
+CLICKHOUSE_PASSWORD=
+CLICKHOUSE_DATABASE=
+
+CLICKHOUSE_MCP_URL=
+CLICKHOUSE_MCP_AUTH_TOKEN=
+```
+
+The MCP URL must point to the MCP endpoint, for example:
+
+```env
+CLICKHOUSE_MCP_URL=https://your-mcp-service.example.com/mcp
+```
+
+Never commit passwords, API keys, or authentication tokens to the repository.
+
+---
+
+# 🛠️ Local Development
+
+Clone the repository:
+
+```bash
+git clone https://github.com/Zahraishag/directors-memory.git
+cd directors-memory
+```
+
+Install dependencies:
 
 ```bash
 npm install
-npm i -g vercel   # if you don't already have the Vercel CLI
+```
+
+Install the Vercel CLI if necessary:
+
+```bash
+npm install -g vercel
+```
+
+Configure the required environment variables.
+
+Run:
+
+```bash
 vercel dev
 ```
 
-Then open the printed local URL (typically `http://localhost:3000`).
+Then open the local URL provided by Vercel.
 
-Add your credentials to a local `.env` file first (see below) — `vercel dev`
-reads it automatically. If you skip this, the demo still works end to end
-via the fallback paths, just without live Gemini or live ClickHouse results.
+---
+
+# 🚀 Production Deployment
+
+The frontend and serverless API are deployed with Vercel.
 
 ```bash
-# .env  (do not commit this file)
-GEMINI_API_KEY=your_key_here
-CLICKHOUSE_HOST=https://your-service.clickhouse.cloud:8443
-CLICKHOUSE_USERNAME=your_username
-CLICKHOUSE_PASSWORD=your_password
-CLICKHOUSE_DATABASE=default
-```
-
-## Environment variable setup
-
-**Never commit or hardcode any of these anywhere in the frontend.** Each is
-only ever read server-side: `GEMINI_API_KEY` in `api/analyze-scene.js`, and
-the four `CLICKHOUSE_*` variables in `api/get-decisions.js` and
-`api/health-clickhouse.js` (via the shared `api/_clickhouse.js` helper).
-
-On Vercel:
-
-1. Open your project (`directors-memory-4`) in the **Vercel Dashboard**.
-2. Go to **Settings → Environment Variables**.
-3. Add the following variables:
-   - `GEMINI_API_KEY` — your Gemini API key
-   - `CLICKHOUSE_HOST` — your ClickHouse Cloud service URL, including
-     scheme and port (e.g. `https://xxxxx.clickhouse.cloud:8443`)
-   - `CLICKHOUSE_USERNAME` — your ClickHouse username
-   - `CLICKHOUSE_PASSWORD` — your ClickHouse password
-   - `CLICKHOUSE_DATABASE` — `default`
-   - **Environment:** Production (and Preview/Development if you want
-     those to have live results too)
-4. Save, then **Redeploy** the project — environment variable changes
-   don't apply to already-running deployments.
-
-Get a Gemini API key from Google AI Studio, and your ClickHouse Cloud
-connection details from the `directors-memory` service's **Connect** panel,
-if you don't have them yet.
-
-## How to deploy
-
-**Vercel** (recommended — this project is built for Vercel Functions)
-```bash
-npm i -g vercel
 vercel --prod
 ```
-Framework preset: "Other". No build command needed — `index.html`,
-`styles.css`, `app.js`, and `assets/` are served statically, and
-`api/analyze-scene.js`, `api/get-decisions.js`, and
-`api/health-clickhouse.js` are auto-detected as Vercel Functions. Make sure
-`GEMINI_API_KEY` and the four `CLICKHOUSE_*` variables are set in
-Environment Variables *before* your first production deploy (or redeploy
-after adding them). This project already deploys to the existing Vercel
-project `directors-memory-4` — no new project needed.
 
-**Netlify**
-The frontend (static files) will deploy fine via drag-and-drop or the
-Netlify CLI, but the `api/*.js` files are written as Vercel Functions and
-won't run as-is on Netlify — they would need to be ported to Netlify
-Functions first. Without that, the demo still runs completely via the
-built-in fallback paths.
+Production:
 
-## Test checklist
+https://directors-memory-4.vercel.app
 
-- [ ] `GET /api/analyze-scene` → `405 Method not allowed`
-- [ ] `POST /api/analyze-scene` with no `imageBase64` → `400`
-- [ ] `POST /api/analyze-scene` with `GEMINI_API_KEY` unset → `500`, generic
-      message, real error only in the Vercel function logs
-- [ ] `GET /api/get-decisions` with missing `project_id`/`character_name`/
-      `scene` → `400`
-- [ ] `GET /api/get-decisions?project_id=project-aurora&character_name=Maya&scene=7`
-      with ClickHouse configured → `success:true`, `source:"clickhouse"`,
-      4 decisions returned
-- [ ] Same call with `CLICKHOUSE_*` vars unset → `success:false`,
-      `source:"fallback"`, generic error, real error only in the Vercel
-      function logs
-- [ ] `GET /api/health-clickhouse` → `{ ok, configured, status }`, no
-      credentials or hostnames in the response
-- [ ] With valid credentials: Run Continuity Check → **LIVE · GEMINI** and
-      **LIVE · CLICKHOUSE** badges, Gemini Vision Analysis panel populated,
-      Director Memory panel shows 4 active decisions, **3 Continuity
-      Conflicts Detected** (Hair, Wardrobe, Prop), Lighting shown as
-      Consistent
-- [ ] Temporarily break the Gemini key/network → **DEMO FALLBACK** badge,
-      toast shown, rest of the flow unaffected
-- [ ] Temporarily break ClickHouse credentials/network → **MEMORY FALLBACK**
-      badge, toast shown, conflicts still detected correctly from the local
-      fallback decisions, rest of the flow unaffected
-- [ ] Conflict cards → View Decision modal → Generate Continuity Fix →
-      Copy Prompt (clipboard) → Approve Fix → Continuity Restored
-- [ ] Mobile viewport: sidebar toggle, stacked layout, all buttons reachable
+---
 
-## File structure
+# 📁 Project Structure
 
-```
-director's-memory/
-├── index.html                Screens, sidebar, top bar, modal, toast
-├── styles.css                Design tokens + cinematic dark theme
-├── app.js                    Data layer, ClickHouse memory layer,
-│                              Gemini Vision layer, continuity engine,
-│                              UI wiring
+```text
+directors-memory/
+│
 ├── api/
-│   ├── analyze-scene.js      Vercel Function — server-side Gemini call
-│   ├── get-decisions.js      Vercel Function — live ClickHouse decisions
-│   ├── health-clickhouse.js  Vercel Function — ClickHouse connectivity check
-│   └── _clickhouse.js        Shared server-side ClickHouse client helper
-├── package.json               @google/genai + @clickhouse/client deps
-├── assets/
-│   └── scene-07-frame.jpg    Scene 7 cinematic reference frame
-└── README.md                 This file
+│   ├── _clickhouse.js
+│   ├── _mcp-client.js
+│   ├── analyze-scene.js
+│   ├── diagnose-clickhouse.js
+│   ├── get-decisions.js
+│   ├── health-clickhouse.js
+│   └── health-mcp.js
+│
+├── app.js
+├── index.html
+├── package.json
+├── styles.css
+├── README.md
+└── LICENSE
 ```
+
+---
+
+# 🌟 What Makes Director's Memory Different?
+
+Many AI filmmaking systems focus on one question:
+
+> What should we generate next?
+
+Director's Memory adds another:
+
+> What has the production already decided?
+
+This changes the role of AI from an isolated generator into a production participant that can operate within persistent creative constraints.
+
+The system gives future agents a structured memory of:
+
+- What was approved
+- Who or what the decision applies to
+- When it became active
+- When it expires
+- What decision it may supersede
+- Why it was established
+
+---
+
+# 👤 Human Creative Authority
+
+Director's Memory is designed around a human-centered principle:
+
+> **The director remains the creative authority.**
+
+AI may:
+
+- Observe
+- Retrieve
+- Compare
+- Detect
+- Suggest
+
+But the approved creative decision belongs to the human director.
+
+The system is designed to preserve human intent rather than replace it.
+
+---
+
+# 🔭 Future Vision
+
+Director's Memory can expand into a shared production-memory layer for multiple filmmaking agents.
+
+Future possibilities include:
+
+- Multi-character continuity
+- Camera and lens memory
+- Costume history
+- Prop lifecycle tracking
+- Location continuity
+- Set continuity
+- Art-direction memory
+- Director overrides
+- Multi-agent production workflows
+- Production approval history
+- Automatic screenplay-to-memory ingestion
+- Cross-scene visual verification
+- Human approval checkpoints
+- Creative provenance tracking
+
+The long-term vision is a persistent memory layer that lets AI agents collaborate across a film production without losing the director's intent.
+
+---
+
+# 🏆 Hackathon Project
+
+**Director's Memory — Persistent Creative Decision Memory for Agentic Filmmaking**
+
+Built with:
+
+- Google Gemini
+- ClickHouse Cloud
+- Official ClickHouse MCP
+- Vercel
+- Render
+
+---
+
+# 🔗 Project Links
+
+### Live Demo
+
+https://directors-memory-4.vercel.app
+
+### GitHub
+
+https://github.com/Zahraishag/directors-memory
+
+### Demo Video
+
+ADD_DEMO_VIDEO_URL
+
+---
+
+# 👩‍💻 Creator
+
+**Dr. Zahra Al-Ansari**
+
+AI • Human-Centered Intelligent Systems • Education Technology
+
+---
+
+# 🎬 Final Thought
+
+> **Generative AI knows how to create the next scene.  
+> Director's Memory helps it remember the film it is already making.**
