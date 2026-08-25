@@ -8,7 +8,7 @@ Director's Memory is an AI-powered continuity system for film production that gi
 
 Instead of treating every generated scene as an isolated prompt, Director's Memory remembers what the director already approved, retrieves only the decisions that still apply to the current scene, and checks new scene content for continuity conflicts.
 
----
+
 
 ## 🚀 Live Demo
 
