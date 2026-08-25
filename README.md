@@ -143,7 +143,7 @@ The system therefore avoids carrying old creative constraints forward forever.
                │                              ▼
                │                  ┌──────────────────────────┐
                │                  │ Official ClickHouse MCP  │
-               │                  │       run_query          │
+               │                  │     Runtime Tool: run_query          │
                │                  └───────────┬──────────────┘
                │                              │
                │                              ▼
