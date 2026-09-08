@@ -723,6 +723,6 @@ AI • Human-Centered Intelligent Systems • Education Technology
 > <img width="1902" height="762" alt="image" src="https://github.com/user-attachments/assets/4396c966-efc4-4264-9c79-5785f5ec4c4c" />
 Horizon redeploy trigger 3.
 > Horizon token redeploy trigger.
-> 
+> Horizon auth redeploy trigger.
 > 
 
